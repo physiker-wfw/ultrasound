@@ -33,7 +33,7 @@ long now = 0; //in ms
 float temp = 0.0;
 float tmp = 0.0;
 float difftemp = 0.05;
-float alarmtemperature = 0.6;
+float alarmtemperature = 1.6;
 int alarmindex = 0;
 
 void setup() {
