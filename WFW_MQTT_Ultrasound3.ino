@@ -1,6 +1,7 @@
-//Project for HOMIE-like MQTT control of water level and temperature
-// Version 1.4 
-// not yet ready 18.11.2017 @ WFW
+//Project for HOMIE-like MQTT control of water level and temperature / Version 1.4 
+// For the neat HOMIE concept of Marvin Roger see: https://github.com/marvinroger/homie-esp8266
+// 
+// October 2017 @ WFW
 //
 #include <Homie.h>
 #include <SoftwareSerial.h>  //For Ultrasound serial interfacing
@@ -20,20 +21,20 @@ DallasTemperature sensors(&oneWire);
 HomieNode ZisterneNode("zisterne", "sensor");
 
 int min_timeout = 10000; //in ms
-float diff = 0.05;
+//float diff = 0.05;
 long lastMsg = 0;
 byte readByte;
 byte read_buffer[4];
 byte crcCalc;
 String message;
 word values[71];
-int valuesLength = 70;
-int valuesDrop = 16;
+int valuesLength = 70;	// Number of ultrasound measurements for averaging
+int valuesDrop = 16;	// Number of ultrasound measurements to cut away at both sides of distribution
 long now = 0; //in ms
 float temp = 0.0;
 float tmp = 0.0;
-float difftemp = 0.05;
-float alarmtemperature = 1.6;
+float difftemp = 0.05;			// Required temperature change for MQTT advertising
+float alarmtemperature = 1.6;	// Lowest temperature without danger of freezing
 int alarmindex = 0;
 
 void setup() {
@@ -167,23 +168,25 @@ void readTsensor(float t) {
 		sensors.requestTemperatures(); // Send the command to get temperatures
 		lastMsg = now;
 		float newTemp = sensors.getTempCByIndex(0);
-		// The following if structure tests the temperature: If for 2 min (12x 10s) 
-		// the temperature is below the alaramtemperature then a MQTT alarm is send.
-		// It is cleared if it is for 2 min above.
-		if (newTemp < alarmtemperature) {
-			alarmindex += 1;
-			if (alarmindex > 11) {
-				ZisterneNode.setProperty("alarm").send("freezing");
-			}
-		}
-		else
-		{
-			alarmindex -= 1;
-			if (alarmindex < 0) {
-				alarmindex = 0;
-				ZisterneNode.setProperty("alarm").send("");
-			}
-		}
+
+		//// The following if structure tests the temperature: If for 2 min (12x 10s) 
+		//// the temperature is below the alaramtemperature then a MQTT alarm is send.
+		//// It is cleared if it is for 2 min above.
+		//if (newTemp < alarmtemperature) {
+		//	alarmindex += 1;
+		//	if (alarmindex > 11) {
+		//		ZisterneNode.setProperty("alarm").send("freezing");
+		//	}
+		//}
+		//else
+		//{
+		//	alarmindex -= 1;
+		//	if (alarmindex < 0) {
+		//		alarmindex = 0;
+		//		ZisterneNode.setProperty("alarm").send("");
+		//	}
+		//}
+
 		if (checkBound(newTemp, tmp, difftemp)) {
 			tmp = newTemp;
 			ZisterneNode.setProperty("temperature").send(String(tmp));
